@@ -3,7 +3,9 @@ name = "vacation-tracker"
 version = "0.1.0"
 description = "Vacation Tracker REST API — FastAPI + PostgreSQL"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "pydantic-settings>=2.14.2",
+]
 
 [dependency-groups]
 dev = [
