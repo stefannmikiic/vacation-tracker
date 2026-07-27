@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     app_name: str = "Vacation Tracker"
     app_env: str = "development"
     log_level: str = "INFO"
+    # Required — set DATABASE_URL in .env (no default in source).
+    database_url: str
 
 
 @lru_cache
