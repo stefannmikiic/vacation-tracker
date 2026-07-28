@@ -63,6 +63,15 @@ class ImportService:
                     )
                     summary.created += 1
                 else:
+                    if existing.role == UserRole.ADMIN.value:
+                        summary.errors.append(
+                            ImportRowError(
+                                row.row_number,
+                                f"Cannot update admin via import: {row.email}",
+                            )
+                        )
+                        continue
+
                     existing.password_hash = password_hash
                     summary.updated += 1
 

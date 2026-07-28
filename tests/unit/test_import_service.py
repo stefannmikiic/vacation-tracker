@@ -36,7 +36,7 @@ def test_import_employees_creates_and_updates_password(
     existing = Employee(
         email=email,
         password_hash=hash_password("OldSecret!"),
-        role=UserRole.ADMIN.value,
+        role=UserRole.EMPLOYEE.value,
         is_active=True,
     )
     import_session.add(existing)
@@ -57,9 +57,39 @@ def test_import_employees_creates_and_updates_password(
     repo = EmployeeRepository(import_session)
     updated = repo.get_by_email(email)
     assert updated is not None
-    assert updated.role == UserRole.ADMIN.value
+    assert updated.role == UserRole.EMPLOYEE.value
     assert verify_password("NewSecret!", updated.password_hash)
 
+def test_import_employees_refuses_admin_password_update(
+    import_session: Session,
+) -> None:
+    email = _unique_email("admin")
+    existing = Employee(
+        email=email,
+        password_hash=hash_password("OldSecret!"),
+        role=UserRole.ADMIN.value,
+        is_active=True,
+    )
+    import_session.add(existing)
+    import_session.flush()
+
+    csv = (
+        "Employee Email,Employee Password\n"
+        f"{email},NewSecret!\n"
+    ).encode()
+
+    summary = ImportService(import_session).import_employees(csv, "employees.csv")
+
+    assert summary.created == 0
+    assert summary.updated == 0
+    assert summary.failed == 1
+    assert any("Cannot update admin via import" in err.message for err in summary.errors)
+
+    admin = EmployeeRepository(import_session).get_by_email(email)
+    assert admin is not None
+    assert admin.role == UserRole.ADMIN.value
+    assert verify_password("OldSecret!", admin.password_hash)
+    assert not verify_password("NewSecret!", admin.password_hash)
 
 def test_import_allowances_upserts_and_rejects_unknown_employee(
     import_session: Session,
