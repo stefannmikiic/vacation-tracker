@@ -1,54 +1,18 @@
 """API authorization boundary tests."""
 
-from collections.abc import Generator
-from uuid import uuid4
-
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from tests.factories import create_allowance, create_employee
 from vacation_tracker.core.constants import UserRole
-from vacation_tracker.core.security import hash_password
-from vacation_tracker.db.models import Employee, VacationAllowance
-from vacation_tracker.db.session import get_db
-from vacation_tracker.main import create_app
-
-
-@pytest.fixture
-def api_client(db_session: Session) -> Generator[TestClient, None, None]:
-    """Real app with DB dependency overridden to the rolled-back test session."""
-    app = create_app()
-
-    def override_get_db() -> Generator[Session, None, None]:
-        yield db_session
-
-    app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as client:
-        yield client
-
-
-def _create_user(
-    session: Session,
-    *,
-    role: str = UserRole.EMPLOYEE.value,
-    password: str = "Secret123!",
-) -> tuple[Employee, str]:
-    employee = Employee(
-        email=f"api-{uuid4()}@example.com",
-        password_hash=hash_password(password),
-        role=role,
-        is_active=True,
-    )
-    session.add(employee)
-    session.flush()
-    return employee, password
 
 
 def test_employee_cannot_access_admin_employees(
     api_client: TestClient,
     db_session: Session,
 ) -> None:
-    employee, password = _create_user(db_session)
+    employee, password = create_employee(db_session)
 
     response = api_client.get(
         "/api/v1/admin/employees",
@@ -62,8 +26,8 @@ def test_employee_cannot_access_other_employee_allowances(
     api_client: TestClient,
     db_session: Session,
 ) -> None:
-    employee, password = _create_user(db_session)
-    other, _ = _create_user(db_session)
+    employee, password = create_employee(db_session)
+    other, _ = create_employee(db_session)
 
     response = api_client.get(
         f"/api/v1/admin/employees/{other.id}/allowances",
@@ -77,8 +41,8 @@ def test_admin_can_list_employees(
     api_client: TestClient,
     db_session: Session,
 ) -> None:
-    admin, password = _create_user(db_session, role=UserRole.ADMIN.value)
-    _create_user(db_session)
+    admin, password = create_employee(db_session, role=UserRole.ADMIN.value)
+    create_employee(db_session)
 
     response = api_client.get(
         "/api/v1/admin/employees",
@@ -94,10 +58,9 @@ def test_admin_can_view_employee_allowances(
     api_client: TestClient,
     db_session: Session,
 ) -> None:
-    admin, password = _create_user(db_session, role=UserRole.ADMIN.value)
-    employee, _ = _create_user(db_session)
-    db_session.add(VacationAllowance(employee_id=employee.id, year=2021, total_days=20))
-    db_session.flush()
+    admin, password = create_employee(db_session, role=UserRole.ADMIN.value)
+    employee, _ = create_employee(db_session)
+    create_allowance(db_session, employee.id, 2021, 20)
 
     response = api_client.get(
         f"/api/v1/admin/employees/{employee.id}/allowances",
@@ -115,9 +78,8 @@ def test_employee_summary_returns_own_balance(
     api_client: TestClient,
     db_session: Session,
 ) -> None:
-    employee, password = _create_user(db_session)
-    db_session.add(VacationAllowance(employee_id=employee.id, year=2021, total_days=20))
-    db_session.flush()
+    employee, password = create_employee(db_session)
+    create_allowance(db_session, employee.id, 2021, 20)
 
     response = api_client.get(
         "/api/v1/me/vacations/summary",
@@ -142,9 +104,8 @@ def test_employee_can_create_own_usage(
     # create_usage commits; flush keeps the shared rollback fixture effective.
     monkeypatch.setattr(db_session, "commit", db_session.flush)
 
-    employee, password = _create_user(db_session)
-    db_session.add(VacationAllowance(employee_id=employee.id, year=2021, total_days=10))
-    db_session.flush()
+    employee, password = create_employee(db_session)
+    create_allowance(db_session, employee.id, 2021, 10)
 
     response = api_client.post(
         "/api/v1/me/vacations/usages",
