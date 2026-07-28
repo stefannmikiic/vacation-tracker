@@ -51,3 +51,23 @@ class UsageRepository(BaseRepository[VacationUsage]):
         if exclude_id is not None:
             stmt = stmt.where(VacationUsage.id != exclude_id)
         return list(self._session.scalars(stmt))
+
+    def list_filtered(
+        self,
+        *,
+        employee_id: uuid.UUID | None = None,
+        window_start: date | None = None,
+        window_end: date | None = None,
+        limit: int,
+    ) -> list[VacationUsage]:
+        """Return usages matching optional employee and date-window filters."""
+        stmt = select(VacationUsage)
+        if employee_id is not None:
+            stmt = stmt.where(VacationUsage.employee_id == employee_id)
+        if window_start is not None and window_end is not None:
+            stmt = stmt.where(
+                VacationUsage.start_date <= window_end,
+                VacationUsage.end_date >= window_start,
+            )
+        stmt = stmt.order_by(VacationUsage.start_date).limit(limit)
+        return list(self._session.scalars(stmt))

@@ -16,3 +16,8 @@ class EmployeeRepository(BaseRepository[Employee]):
     def get_by_email(self, email: str) -> Employee | None:
         stmt = select(Employee).where(Employee.email == email.lower())
         return self._session.scalar(stmt)
+
+    def list(self, *, limit: int, offset: int = 0) -> list[Employee]:
+        """Return employees ordered by email, with simple limit/offset."""
+        stmt = select(Employee).order_by(Employee.email).offset(offset).limit(limit)
+        return list(self._session.scalars(stmt))

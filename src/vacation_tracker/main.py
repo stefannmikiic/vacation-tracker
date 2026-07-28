@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from vacation_tracker.api.v1.router import api_router
 from vacation_tracker.core.config import get_settings
 from vacation_tracker.core.logging import setup_logging
+from vacation_tracker.schemas.health import HealthResponse
 
 
 @asynccontextmanager
@@ -23,9 +24,9 @@ def create_app() -> FastAPI:
     app = FastAPI(title=settings.app_name, lifespan=lifespan)
     app.include_router(api_router, prefix="/api/v1")
 
-    @app.get("/health")
-    def health() -> dict[str, str]:
-        return {"status": "ok"}
+    @app.get("/health", response_model=HealthResponse)
+    def health() -> HealthResponse:
+        return HealthResponse(status="ok")
 
     return app
 

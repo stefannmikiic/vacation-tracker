@@ -26,6 +26,15 @@ class AllowanceRepository(BaseRepository[VacationAllowance]):
         )
         return self._session.scalar(stmt)
 
+    def list_for_employee(self, employee_id: uuid.UUID) -> list[VacationAllowance]:
+        """Return all allowances for an employee, ordered by year."""
+        stmt = (
+            select(VacationAllowance)
+            .where(VacationAllowance.employee_id == employee_id)
+            .order_by(VacationAllowance.year)
+        )
+        return list(self._session.scalars(stmt))
+
     def upsert(
         self,
         employee_id: uuid.UUID,
