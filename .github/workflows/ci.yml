@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: vacation
+          POSTGRES_PASSWORD: vacation
+          POSTGRES_DB: vacation_tracker
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vacation -d vacation_tracker"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql+psycopg://vacation:vacation@localhost:5432/vacation_tracker
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --frozen --group dev
+
+      - name: Ruff
+        run: uv run ruff check .
+
+      - name: Migrate database
+        run: uv run alembic upgrade head
+
+      - name: Pytest
+        run: uv run pytest
+
+      - name: Docker build
+        run: docker build -t vacation-tracker:ci .
