@@ -8,8 +8,11 @@ from vacation_tracker.core.config import Settings, get_settings
 _TEST_DATABASE_URL = "postgresql+psycopg://test:test@localhost:5432/test"
 
 
-def test_settings_defaults() -> None:
-    # Ignore local .env so defaults are deterministic in every environment.
+def test_settings_defaults(monkeypatch) -> None:
+    # Ignore process env + .env so defaults are deterministic in every environment.
+    monkeypatch.delenv("APP_NAME", raising=False)
+    monkeypatch.delenv("APP_ENV", raising=False)
+    monkeypatch.delenv("LOG_LEVEL", raising=False)
     settings = Settings(_env_file=None, database_url=_TEST_DATABASE_URL)
 
     assert settings.app_name == "Vacation Tracker"
@@ -18,7 +21,9 @@ def test_settings_defaults() -> None:
     assert settings.database_url == _TEST_DATABASE_URL
 
 
-def test_settings_requires_database_url() -> None:
+def test_settings_requires_database_url(monkeypatch) -> None:
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+
     with pytest.raises(ValidationError):
         Settings(_env_file=None)
 
@@ -35,7 +40,8 @@ def test_settings_reads_env(monkeypatch) -> None:
     assert settings.database_url == _TEST_DATABASE_URL
 
 
-def test_get_settings_returns_cached_instance() -> None:
+def test_get_settings_returns_cached_instance(monkeypatch) -> None:
+    monkeypatch.setenv("DATABASE_URL", _TEST_DATABASE_URL)
     get_settings.cache_clear()
 
     first = get_settings()
