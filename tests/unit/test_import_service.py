@@ -83,7 +83,10 @@ def test_import_employees_refuses_admin_password_update(
     assert summary.created == 0
     assert summary.updated == 0
     assert summary.failed == 1
-    assert any("Cannot update admin via import" in err.message for err in summary.errors)
+    assert any(
+        "Cannot update admin via import" in err.message
+        for err in summary.errors
+    )
 
     admin = EmployeeRepository(import_session).get_by_email(email)
     assert admin is not None
