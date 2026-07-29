@@ -170,3 +170,24 @@ def test_import_usages_creates_and_rejects_overlap(
     assert len(usages) == 2
     starts = {usage.start_date for usage in usages}
     assert starts == {date(2021, 6, 1), date(2021, 8, 1)}
+
+def test_import_employees_handles_duplicate_rows(
+    import_session: Session,
+) -> None:
+    email = _unique_email("duplicate")
+
+    csv = (
+        "Employee Email,Employee Password\n"
+        f"{email},Password1!\n"
+        f"{email},Password2!\n"
+    ).encode()
+
+    summary = ImportService(
+        import_session
+    ).import_employees(
+        csv,
+        "employees.csv",
+    )
+
+    assert summary.created == 1
+    assert summary.failed == 0

@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Integer, UniqueConstraint
+from sqlalchemy import CheckConstraint, ForeignKey, Integer, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -20,6 +20,10 @@ class VacationAllowance(IDMixin, TimestampMixin, Base):
     __tablename__ = "vacation_allowances"
     __table_args__ = (
         UniqueConstraint("employee_id", "year", name="uq_allowance_employee_year"),
+        CheckConstraint(
+            "total_days >= 0",
+            name="ck_allowance_total_days_nonneg",
+        ),
     )
 
     employee_id: Mapped[uuid.UUID] = mapped_column(

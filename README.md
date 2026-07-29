@@ -145,7 +145,7 @@ Sanity-checked against the real API: profiles and allowances import cleanly; usa
 |--------|------|--------|
 | `GET` | `/api/v1/admin/employees` | Paginated list (`limit` / `offset`) |
 | `GET` | `/api/v1/admin/employees/{id}/allowances` | 404 if employee missing |
-| `GET` | `/api/v1/admin/vacation-usages` | Optional filters: `employee_id`, `year`, `from`, `to` |
+| `GET` | `/api/v1/admin/vacation-usages` | Optional filters: `employee_id`, `year`, `from`, `to`; pagination: `limit` / `offset` |
 
 ### Employee self-service (any authenticated user; always own data)
 
@@ -164,7 +164,7 @@ Documented domain rules (locked for this project):
 1. **Day counting** uses inclusive calendar days: `end - start + 1` (not business days).
 2. **Cross-year ranges** split at year boundaries; each day counts toward the year it falls in.
 3. **Employees** only access `/me` data for themselves; **admins** can query all imported data.
-4. **Overlapping usages** for the same employee are rejected (service create and usage import).
+4. **Overlapping usages** for the same employee are rejected in application code (service create and usage import). Concurrent requests could theoretically race; there is no DB exclusion constraint for overlapping date ranges in this project scope.
 5. **Create usage** is rejected if any affected year would go negative on available balance.
 6. **Passwords** are bcrypt-hashed on import/admin create; plaintext is never stored.
 7. **Admin bootstrap** is explicit via `scripts/create_admin.py` (not seeded in app lifespan).
@@ -194,6 +194,7 @@ Deliberately **not** built (and why):
 | Full hexagonal / ports & adapters tree | Layers already provide boundaries |
 | Splitting vacation into many services | One `VacationService` stays cohesive |
 | Auto-migrate on container start | Keeps schema changes an explicit, reviewable step |
+| DB exclusion constraint on overlapping usages | App-level check is enough for this assignment; concurrent race is an accepted tradeoff |
 
 Partial-success imports trade strict all-or-nothing transactions for operator-friendly feedback on large CSVs. Usage imports do not enforce yearly balance (create-via-API does); that matches “load historical data, then enforce going forward.”
 

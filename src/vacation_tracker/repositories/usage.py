@@ -59,6 +59,7 @@ class UsageRepository(BaseRepository[VacationUsage]):
         window_start: date | None = None,
         window_end: date | None = None,
         limit: int,
+        offset: int = 0,
     ) -> list[VacationUsage]:
         """Return usages matching optional employee and date-window filters."""
         stmt = select(VacationUsage)
@@ -69,5 +70,5 @@ class UsageRepository(BaseRepository[VacationUsage]):
                 VacationUsage.start_date <= window_end,
                 VacationUsage.end_date >= window_start,
             )
-        stmt = stmt.order_by(VacationUsage.start_date).limit(limit)
+        stmt = stmt.order_by(VacationUsage.start_date).offset(offset).limit(limit)
         return list(self._session.scalars(stmt))

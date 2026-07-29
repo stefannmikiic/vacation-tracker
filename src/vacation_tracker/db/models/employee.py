@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class Employee(IDMixin, TimestampMixin, Base):
     __tablename__ = "employees"
 
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True)
     password_hash: Mapped[str] = mapped_column(String(255))
     role: Mapped[str] = mapped_column(String(32), default=UserRole.EMPLOYEE.value)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)

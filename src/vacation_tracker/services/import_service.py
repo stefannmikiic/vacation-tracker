@@ -61,6 +61,7 @@ class ImportService:
                             role=UserRole.EMPLOYEE.value,
                         )
                     )
+                    self._session.flush()
                     summary.created += 1
                 else:
                     if existing.role == UserRole.ADMIN.value:
@@ -111,6 +112,7 @@ class ImportService:
                     row.year,
                 )
                 self._allowances.upsert(employee.id, row.year, row.total_days)
+                self._session.flush()
                 if existing is None:
                     summary.created += 1
                 else:

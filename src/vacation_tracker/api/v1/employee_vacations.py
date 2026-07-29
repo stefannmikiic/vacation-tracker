@@ -26,7 +26,7 @@ ToQuery = Annotated[date, Query(alias="to")]
 
 @router.get("/summary", response_model=VacationSummaryResponse)
 def get_my_vacation_summary(
-    year: int,
+    year: Annotated[int, Query(ge=2000, le=2100)],
     db: DbSession,
     current_user: CurrentUser,
 ) -> VacationSummaryResponse:

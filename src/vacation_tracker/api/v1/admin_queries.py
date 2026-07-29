@@ -110,6 +110,7 @@ def list_vacation_usages(
     date_from: FromQuery = None,
     date_to: ToQuery = None,
     limit: LimitQuery = DEFAULT_PAGE_SIZE,
+    offset: OffsetQuery = 0,
 ) -> list[UsageResponse]:
     window = _resolve_usage_window(
         year=year,
@@ -127,5 +128,6 @@ def list_vacation_usages(
         window_start=window_start,
         window_end=window_end,
         limit=_clamp_limit(limit),
+        offset=offset,
     )
     return [UsageResponse.model_validate(usage) for usage in usages]
